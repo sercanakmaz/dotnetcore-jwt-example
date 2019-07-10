@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using JWTAuthenticationAuthorization.Controllers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -60,7 +61,7 @@ namespace JWTAuthenticationAuthorization
                     {
                         OnTokenValidated = ctx =>
                         {
-                           var userId = ctx.Principal.Claims.Where(p => p.ValueType == ClaimTypes.NameIdentifier);
+                            var userId = ctx.Principal.Claims.Where(p => p.ValueType == ClaimTypes.NameIdentifier);
                             //Gerekirse burada gelen token içerisindeki çeşitli bilgilere göre doğrulam yapılabilir.
                             return Task.CompletedTask;
                         },
@@ -69,13 +70,22 @@ namespace JWTAuthenticationAuthorization
                             Console.WriteLine("Exception:{0}", ctx.Exception.Message);
                             return Task.CompletedTask;
                         },
-                        OnChallenge = ctx =>
-                        {
-                            return Task.CompletedTask;
-                        }
+                        OnChallenge = ctx => { return Task.CompletedTask; }
                     };
                 });
-            services.AddSingleton<IAuthorizationPolicyProvider, AuthorizationPolicyProvider>();
+
+            services
+                .AddAuthorization(options =>
+                {
+                    options.AddPolicy(OrderPermissions.CanReadOrder,
+                        policy => policy.RequireClaim(OrderPermissions.CanReadOrder));
+                    options.AddPolicy(OrderPermissions.CanCreateOrder,
+                        policy => policy.RequireClaim(OrderPermissions.CanCreateOrder));
+                    options.AddPolicy(OrderPermissions.CanApproveFraud,
+                        policy => policy.RequireClaim(OrderPermissions.CanApproveFraud));
+                });
+
+//            services.AddSingleton<IAuthorizationPolicyProvider, AuthorizationPolicyProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -96,50 +106,44 @@ namespace JWTAuthenticationAuthorization
             app.UseMvc();
         }
     }
-    
-    public class PermissionAuthorizeAttribute : AuthorizeAttribute
-    {
-        internal const string PolicyPrefix = "PERMISSION:";
-        /// <summary>
-        /// Creates a new instance of <see cref="AuthorizeAttribute"/> class.
-        /// </summary>
-        /// <param name="permissions">A list of permissions to authorize</param>
-        public PermissionAuthorizeAttribute(params string[] permissions)
-        {
-            Policy = $"{PolicyPrefix}{string.Join(",", permissions)}";
-        }
-    }
-    public class AuthorizationPolicyProvider : DefaultAuthorizationPolicyProvider
-    {
-        public AuthorizationPolicyProvider(IOptions<AuthorizationOptions> options)
-            : base(options)
-        {
-        }
 
-        public override Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
-        {
-            if (!policyName.StartsWith(PermissionAuthorizeAttribute.PolicyPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return base.GetPolicyAsync(policyName);
-            }
-
-            var permissionNames = policyName.Substring(PermissionAuthorizeAttribute.PolicyPrefix.Length).Split(',');
-
-            var policy = new AuthorizationPolicyBuilder()
-                .RequireClaim(CustomClaimTypes.Permission, permissionNames)
-                .Build();
-
-            return Task.FromResult(policy);
-        }
-    }
+//    public class AuthorizeByClaimAttribute : AuthorizeAttribute
+//    {
+//        internal const string PolicyPrefix = "PERMISSION:";
+//        /// <summary>
+//        /// Creates a new instance of <see cref="AuthorizeAttribute"/> class.
+//        /// </summary>
+//        /// <param name="permissions">A list of permissions to authorize</param>
+//        public AuthorizeByClaimAttribute(params string[] permissions)
+//        {
+//            Policy = $"{PolicyPrefix}{string.Join(",", permissions)}";
+//        }
+//    }
+//    public class AuthorizationPolicyProvider : DefaultAuthorizationPolicyProvider
+//    {
+//        public AuthorizationPolicyProvider(IOptions<AuthorizationOptions> options)
+//            : base(options)
+//        {
+//        }
+//
+//        public override Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
+//        {
+//            if (!policyName.StartsWith(AuthorizeByClaimAttribute.PolicyPrefix, StringComparison.OrdinalIgnoreCase))
+//            {
+//                return base.GetPolicyAsync(policyName);
+//            }
+//
+//            var permissionNames = policyName.Substring(AuthorizeByClaimAttribute.PolicyPrefix.Length).Split(',');
+//
+//            var policy = new AuthorizationPolicyBuilder()
+//                .RequireClaim(CustomClaimTypes.Permission, permissionNames)
+//                .Build();
+//
+//            return Task.FromResult(policy);
+//        }
+//    }
     public class CustomClaimTypes
     {
         public const string Permission = "projectname/permission";
-    }
-
-    public class CustomPermissions
-    {
-        public const string CanReadValues = "CanReadValues";
-        public const string CanWriteValues = "CanWriteValues";
     }
 }

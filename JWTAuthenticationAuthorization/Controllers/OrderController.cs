@@ -10,7 +10,7 @@ namespace JWTAuthenticationAuthorization.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ValuesController : ControllerBase
+    public class OrderController : ControllerBase
     {
         public static List<string> Values = new List<string>();
         // GET api/values
@@ -20,7 +20,7 @@ namespace JWTAuthenticationAuthorization.Controllers
             return new string[] {"value1", "value2"};
         }
 
-        [PermissionAuthorizeAttribute(CustomPermissions.CanReadValues)]
+        [Authorize(OrderPermissions.CanReadOrder)]
         [Authorize()]
         // GET api/values/5
         [HttpGet("{id}")]
@@ -30,7 +30,7 @@ namespace JWTAuthenticationAuthorization.Controllers
         }
 
         // POST api/values
-        [PermissionAuthorizeAttribute(CustomPermissions.CanWriteValues)]
+        [Authorize(OrderPermissions.CanCreateOrder)]
         [HttpPost]
         public void Post([FromBody] string value)
         {
@@ -38,14 +38,16 @@ namespace JWTAuthenticationAuthorization.Controllers
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [Authorize(OrderPermissions.CanApproveFraud)]
+        public void FraudApproved(int id, [FromBody] string value)
         {
         }
+    }
 
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    public class OrderPermissions
+    {
+        public const string CanReadOrder = "CanReadOrder";
+        public const string CanCreateOrder = "CanCreateOrder";
+        public const string CanApproveFraud = "CanApproveFraud";
     }
 }

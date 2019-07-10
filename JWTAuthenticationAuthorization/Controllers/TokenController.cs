@@ -39,7 +39,7 @@ namespace JWTAuthenticationAuthorization.Controllers
                 new Claim(JwtRegisteredClaimNames.UniqueName, userName),
                 new Claim(JwtRegisteredClaimNames.Email, "heimdall@mail.com"),
                 new Claim(JwtRegisteredClaimNames.NameId, Guid.NewGuid().ToString()),
-                new Claim(CustomClaimTypes.Permission,CustomPermissions.CanReadValues)
+                new Claim(OrderPermissions.CanReadOrder,true.ToString())
             };
 
             SecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
